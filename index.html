@@ -28,7 +28,7 @@ body{
   font-size:15px; line-height:1.55;
   padding-bottom:calc(72px + env(safe-area-inset-bottom));
 }
-body.noscroll{overflow:hidden}
+body.noscroll{overflow:hidden;position:fixed;width:100%;left:0;right:0}
 #topbar{
   position:sticky; top:0; z-index:20;
   background:rgba(251,247,236,.94); backdrop-filter:blur(6px);
@@ -284,14 +284,19 @@ function toast(msg){
 }
 
 /* ===== モーダル ===== */
+let savedScroll=0;
 function openModal(html){
+  savedScroll=window.scrollY||window.pageYOffset||0;
   document.getElementById('modal-root').innerHTML=
     '<div class="overlay" onclick="if(event.target===this)MP.closeModal()"><div class="sheet" role="dialog">'+html+'</div></div>';
   document.body.classList.add('noscroll');
+  document.body.style.top=(-savedScroll)+'px';
 }
 function closeModal(){
   document.getElementById('modal-root').innerHTML='';
   document.body.classList.remove('noscroll');
+  document.body.style.top='';
+  window.scrollTo(0,savedScroll);
   cur.picker=null; render();
 }
 let choiceCbs=[];
@@ -306,7 +311,8 @@ function choiceDialog(msg,options){
 }
 
 /* ===== レンダリング ===== */
-function render(){
+function render(scrollTop){
+  const y=window.scrollY||window.pageYOffset||0;
   const app=document.getElementById('app');
   if(cur.tab==='palette') app.innerHTML=paletteHTML();
   else if(cur.tab==='library') app.innerHTML=libraryHTML();
@@ -314,7 +320,7 @@ function render(){
   ['palette','library','history'].forEach(t=>{
     document.getElementById('nav-'+t).classList.toggle('on',cur.tab===t);
   });
-  window.scrollTo(0,0);
+  window.scrollTo(0,scrollTop?0:y);
 }
 
 /* ---- パレット ---- */
@@ -614,10 +620,10 @@ function buildReportText(){
 
 /* ===== 操作（グローバルAPI） ===== */
 const MP={
-  tab(t){cur.tab=t; render();},
+  tab(t){cur.tab=t; render(true);},
   moveDate(n){cur.date=addDays(cur.date,n); render();},
   goToday(){cur.date=todayStr(); render();},
-  gotoDate(d){cur.date=d; cur.tab='palette'; render();},
+  gotoDate(d){cur.date=d; cur.tab='palette'; render(true);},
 
   /* 体重 */
   lastWeight(key){
