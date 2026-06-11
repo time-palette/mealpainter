@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Meal Painter">
+<meta name="theme-color" content="#FBF7EC">
+<title>Meal Painter｜食事パターン整理</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FBF7EC'/><text x='50' y='68' font-size='56' text-anchor='middle'>🎨</text></svg>">
+<style>
+:root{
+  --bg:#FBF7EC; --paper:#FFFFFF; --ink:#4A4036; --ink2:#8A7E6E;
+  --line:#EDE4D2; --green:#4E9A6A; --green-d:#3F7F57;
+  --c-asa:#FFE9B8; --c-hiru:#D9EFD3; --c-yoru:#DCE4F9; --c-kan:#FBDDE7;
+  --morning:#E8963F; --night:#5B6BBF;
+  --sticky:#FFF6C9; --sticky-line:#EAD98F;
+  --radius:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Maru Gothic ProN","BIZ UDPGothic","Yu Gothic UI","Noto Sans JP",sans-serif;
+  font-size:15px; line-height:1.55;
+  padding-bottom:calc(72px + env(safe-area-inset-bottom));
+}
+body.noscroll{overflow:hidden}
+#topbar{
+  position:sticky; top:0; z-index:20;
+  background:rgba(251,247,236,.94); backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--line);
+  padding:calc(8px + env(safe-area-inset-top)) 16px 8px;
+  display:flex; align-items:baseline; gap:8px; max-width:430px; margin:0 auto;
+}
+#topbar .logo{font-weight:700; font-size:17px; letter-spacing:.02em}
+#topbar .sub{font-size:11px; color:var(--ink2)}
+#app{max-width:430px; margin:0 auto; padding:12px 14px 24px}
+h2.sec{font-size:14px; color:var(--ink2); margin:22px 2px 8px; font-weight:700; letter-spacing:.06em}
+.card{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); padding:14px; box-shadow:0 1px 3px rgba(120,100,60,.06)}
+.hint{font-size:12px; color:var(--ink2)}
+.empty{font-size:13px; color:#B9AE9C}
+.empty-box{padding:28px 12px; text-align:center; color:#B9AE9C; font-size:13px}
+
+/* date bar */
+.datebar{display:flex; align-items:center; gap:8px; margin:4px 0 14px}
+.datebar .dnav{flex:0 0 auto; width:42px; height:42px; border-radius:50%; border:1px solid var(--line); background:var(--paper); font-size:18px; color:var(--ink); }
+.datebar .dmain{flex:1; text-align:center}
+.datebar .dmain .dd{font-size:19px; font-weight:700}
+.datebar .dmain .today-chip{display:inline-block; margin-top:2px; font-size:11px; color:var(--green-d); border:1px solid var(--green); border-radius:999px; padding:1px 10px; background:#fff}
+
+/* weight */
+.wgrid{display:flex; gap:10px}
+.wcol{flex:1; text-align:center}
+.wlabel{font-size:12px; font-weight:700}
+.wlabel.morning{color:var(--morning)} .wlabel.night{color:var(--night)}
+.wval{font-size:24px; font-weight:700; margin:2px 0 6px; letter-spacing:.02em}
+.wval small{font-size:13px; font-weight:400; color:var(--ink2); margin-left:2px}
+.wval.none{color:#C9BFAE}
+.wbtns{display:grid; grid-template-columns:repeat(4,1fr); gap:5px}
+.wbtns button{border:1px solid var(--line); background:#FCFAF4; border-radius:10px; padding:7px 0; font-size:12px; color:var(--ink); font-weight:600}
+.wbtns button:active{background:#F1EBDC}
+
+/* meal cards */
+.meal-card{position:relative; background:var(--paper); border:1px solid var(--line); border-left:6px solid var(--mc,#ddd); border-radius:var(--radius); padding:12px 12px 10px; margin:18px 0; box-shadow:0 1px 3px rgba(120,100,60,.06)}
+.meal-card::before{content:""; position:absolute; top:-9px; left:50%; width:58px; height:16px; margin-left:-29px; background:rgba(232,222,196,.55); border:1px solid rgba(190,175,140,.35); transform:rotate(-2deg); border-radius:2px}
+.meal-head{display:flex; align-items:center; gap:8px; margin-bottom:8px}
+.meal-name{font-weight:700; font-size:16px}
+.meal-name .dot{display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--mc); margin-right:6px; vertical-align:1px}
+.meal-head .spacer{flex:1}
+.mini-btn{border:1px solid var(--line); background:#FCFAF4; color:var(--ink); border-radius:999px; font-size:12px; padding:5px 11px}
+.mini-btn:active{background:#F1EBDC}
+.sec-label{font-size:11px; color:var(--ink2); margin:6px 0 5px; letter-spacing:.05em}
+.chips{display:flex; flex-wrap:wrap; gap:8px 7px; min-height:26px; padding:2px 0 4px}
+.sticky{background:var(--sticky); border:1px solid var(--sticky-line); border-radius:3px 10px 3px 10px; box-shadow:0 2px 3px rgba(120,90,20,.13); padding:5px 7px 5px 10px; display:inline-flex; align-items:center; gap:6px; font-size:14px; max-width:100%}
+.sticky:nth-child(odd){transform:rotate(-1.1deg)}
+.sticky:nth-child(even){transform:rotate(.9deg)}
+.sticky .x{border:none; background:none; color:#B7A35C; font-size:15px; padding:0 2px; line-height:1}
+.sticky.plan{background:#F4F1FB; border-color:#D7D2EC; box-shadow:0 2px 3px rgba(90,90,140,.10)}
+.sticky.plan .x{color:#9A93C2}
+.quick{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px}
+.qchip{border:1.5px dashed #D8CBAA; background:#FFFDF4; color:#7A6F5C; border-radius:999px; font-size:13px; padding:5px 11px}
+.qchip:active{background:#F6EFDB}
+.qchip.add{border-color:var(--green); color:var(--green-d); font-weight:700; background:#fff}
+details.plan-box{margin-top:10px; border-top:1px dashed var(--line); padding-top:6px}
+details.plan-box summary{font-size:12px; color:var(--ink2); list-style:none; cursor:pointer; padding:4px 0}
+details.plan-box summary::-webkit-details-marker{display:none}
+details.plan-box summary::before{content:"▸ "; color:#C2B69F}
+details[open].plan-box summary::before{content:"▾ "}
+.plan-actions{display:flex; gap:8px; margin-top:6px; flex-wrap:wrap}
+
+/* memo */
+textarea.memo{width:100%; border:1px solid var(--line); border-radius:12px; background:#FFFDF6; padding:10px; font:inherit; font-size:14px; min-height:64px; resize:vertical; color:var(--ink)}
+textarea.memo:focus{outline:2px solid #CFE3D6}
+
+/* buttons */
+.btn{display:inline-block; border:none; background:var(--green); color:#fff; font-weight:700; font-size:14px; border-radius:999px; padding:11px 20px}
+.btn:active{background:var(--green-d)}
+.btn.wide{width:100%; text-align:center}
+.btn-ghost{display:inline-block; border:1.5px solid var(--green); background:#fff; color:var(--green-d); font-weight:700; font-size:13px; border-radius:999px; padding:9px 16px}
+.btn-soft{display:inline-block; border:1px solid var(--line); background:#FCFAF4; color:var(--ink); font-size:13px; border-radius:999px; padding:9px 16px}
+.btn-soft:active{background:#F1EBDC}
+
+/* bottom nav */
+#bottomnav{position:fixed; left:0; right:0; bottom:0; z-index:30; background:rgba(255,255,255,.96); border-top:1px solid var(--line); display:flex; max-width:430px; margin:0 auto; padding-bottom:env(safe-area-inset-bottom)}
+#bottomnav button{flex:1; border:none; background:none; padding:9px 0 7px; font-size:11px; color:#A29682; display:flex; flex-direction:column; align-items:center; gap:2px; font-weight:600}
+#bottomnav button .ico{font-size:21px; line-height:1}
+#bottomnav button.on{color:var(--green-d)}
+
+/* modal */
+.overlay{position:fixed; inset:0; z-index:50; background:rgba(70,60,40,.35); display:flex; align-items:flex-end; justify-content:center}
+.sheet{background:var(--bg); width:100%; max-width:430px; max-height:88vh; border-radius:20px 20px 0 0; padding:16px 16px calc(16px + env(safe-area-inset-bottom)); overflow-y:auto; animation:up .18s ease-out}
+@keyframes up{from{transform:translateY(30px); opacity:.6} to{transform:none; opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
+.sheet h3{margin:0 0 10px; font-size:16px}
+.sheet .closer{position:sticky; top:0; float:right; border:none; background:#EFE8D8; border-radius:50%; width:32px; height:32px; font-size:15px; color:var(--ink2)}
+.tabs{display:flex; gap:6px; overflow-x:auto; padding:6px 0 10px; -webkit-overflow-scrolling:touch}
+.tabs button{flex:0 0 auto; border:1px solid var(--line); background:#fff; border-radius:999px; padding:6px 13px; font-size:13px; color:var(--ink2); white-space:nowrap}
+.tabs button.on{background:var(--green); border-color:var(--green); color:#fff; font-weight:700}
+.search{width:100%; border:1px solid var(--line); border-radius:999px; padding:10px 15px; font:inherit; font-size:14px; background:#fff}
+.pk-list{display:flex; flex-wrap:wrap; gap:9px; padding:4px 0 14px; min-height:60px}
+.pk-item{background:var(--sticky); border:1px solid var(--sticky-line); border-radius:3px 10px 3px 10px; box-shadow:0 2px 3px rgba(120,90,20,.13); padding:9px 13px; font-size:14px; color:var(--ink)}
+.pk-item:active{transform:scale(.96)}
+.pk-item .fav{color:#E0A53C; margin-right:3px}
+.newrow{border-top:1px dashed var(--line); padding-top:12px; margin-top:4px}
+.newrow .row{display:flex; gap:8px; margin-top:8px}
+.input{width:100%; border:1px solid var(--line); border-radius:12px; padding:10px 12px; font:inherit; font-size:14px; background:#fff}
+select.input{appearance:none}
+.choice-btns{display:flex; flex-direction:column; gap:9px; margin-top:14px}
+
+/* library */
+.lib-item{display:flex; align-items:center; gap:8px; background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:9px 10px; margin-bottom:8px}
+.lib-item .nm{flex:1; min-width:0}
+.lib-item .nm .name{font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.lib-item .nm .meta{font-size:11px; color:var(--ink2)}
+.icon-btn{border:1px solid var(--line); background:#FCFAF4; border-radius:10px; width:34px; height:34px; font-size:14px; color:var(--ink2); flex:0 0 auto}
+.icon-btn.star.on{color:#E0A53C; border-color:#EAD98F; background:#FFF8E0}
+
+/* history */
+.range-row{display:flex; gap:8px; align-items:center; margin:8px 0}
+.range-row input[type=date]{flex:1; border:1px solid var(--line); border-radius:10px; padding:8px; font:inherit; font-size:13px; background:#fff; color:var(--ink); min-width:0}
+.log-day{background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:11px 12px; margin-bottom:10px}
+.log-day .ld-head{display:flex; align-items:baseline; gap:10px; margin-bottom:4px}
+.log-day .ld-date{font-weight:700}
+.log-day .ld-w{font-size:12px; color:var(--ink2)}
+.log-day .ld-meal{font-size:13px; margin:2px 0}
+.log-day .ld-meal b{font-weight:700; font-size:12px; margin-right:4px}
+.log-day .ld-memo{font-size:12px; color:var(--ink2); margin-top:4px; background:#FCF9F0; border-radius:8px; padding:5px 8px}
+.log-day .ld-edit{margin-top:7px}
+.report-box{width:100%; border:1px solid var(--line); border-radius:12px; background:#fff; padding:10px; font-size:12px; font-family:ui-monospace,Menlo,monospace; min-height:140px; white-space:pre; overflow:auto; color:var(--ink)}
+.gwrap{overflow:hidden}
+
+/* toast */
+#toast{position:fixed; left:50%; bottom:calc(86px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(10px); background:#4A4036; color:#FFFDF4; font-size:13px; padding:9px 18px; border-radius:999px; opacity:0; pointer-events:none; transition:.22s; z-index:60; max-width:86vw; text-align:center}
+#toast.show{opacity:.96; transform:translateX(-50%)}
+button{font-family:inherit; cursor:pointer}
+button:focus-visible,.input:focus-visible,.search:focus-visible{outline:2px solid var(--green); outline-offset:1px}
+</style>
+</head>
+<body>
+<header id="topbar"><span class="logo">🎨 Meal Painter</span><span class="sub">食事を、付箋でゆるく整える</span></header>
+<main id="app"></main>
+<nav id="bottomnav">
+  <button id="nav-palette" onclick="MP.tab('palette')"><span class="ico">🎨</span>パレット</button>
+  <button id="nav-library" onclick="MP.tab('library')"><span class="ico">🏷️</span>いつもの食事</button>
+  <button id="nav-history" onclick="MP.tab('history')"><span class="ico">📖</span>履歴・報告</button>
+</nav>
+<div id="modal-root"></div>
+<div id="toast" role="status"></div>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+
+<script>
+'use strict';
+/* ===== 定数 ===== */
+const LS_KEY='mealPainter_v1';
+const MEALS=['朝食','昼食','夕食','間食'];
+const MEAL_COLORS={'朝食':'var(--c-asa)','昼食':'var(--c-hiru)','夕食':'var(--c-yoru)','間食':'var(--c-kan)'};
+const CATS=['主食','主菜','副菜','汁物','間食','飲み物','外食・コンビニ','その他'];
+const WD=['日','月','火','水','木','金','土'];
+
+/* ===== 日付ユーティリティ（iOS Safari対応：文字列パースに依存しない） ===== */
+const pad=n=>String(n).padStart(2,'0');
+const dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const todayStr=()=>dstr(new Date());
+function parseDate(s){const p=String(s).split('-').map(Number);return new Date(p[0],(p[1]||1)-1,p[2]||1);}
+function addDays(s,n){const d=parseDate(s);d.setDate(d.getDate()+n);return dstr(d);}
+function disp(s){const d=parseDate(s);return (d.getMonth()+1)+'/'+d.getDate()+'（'+WD[d.getDay()]+'）';}
+function dispLong(s){const d=parseDate(s);return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+'（'+WD[d.getDay()]+'）';}
+const esc=x=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null;};
+const r1=v=>Math.round(v*10)/10;
+
+/* ===== 初期付箋 ===== */
+function seedRecipes(){
+  const def=[
+    ['ごはん','主食',1],['ごはん少なめ','主食',0],['トースト','主食',0],['納豆ごはん','主食',1],
+    ['味噌汁','汁物',1],['具だくさんスープ','汁物',0],
+    ['ゆで卵','主菜',1],['サラダチキン','主菜',1],['焼き魚','主菜',0],['豆腐','主菜',0],
+    ['サラダ','副菜',1],['カット野菜','副菜',0],['海藻','副菜',0],['野菜のおかず','副菜',0],
+    ['お茶・お水','飲み物',1],['コーヒー','飲み物',0],
+    ['ヨーグルト','間食',1],['ナッツ少量','間食',0],['プロテイン','間食',0],['果物','間食',0],
+    ['外食・お弁当','外食・コンビニ',1],['おにぎり＋サラダチキン＋味噌汁','外食・コンビニ',1],
+    ['そば＋ゆで卵','外食・コンビニ',0],['焼き魚定食','外食・コンビニ',0],
+    ['コンビニ弁当＋サラダ','外食・コンビニ',0],['夜遅め軽食','外食・コンビニ',0],
+    ['定食系','外食・コンビニ',0],['スープ＋豆腐','外食・コンビニ',0]
+  ];
+  return def.map((r,i)=>({id:'r'+(i+1),name:r[0],category:r[1],memo:'',isFavorite:!!r[2],isArchived:false}));
+}
+
+/* ===== 正規化（壊れたデータでも白画面にしない） ===== */
+function normSlot(s){
+  const o=(s&&typeof s==='object')?s:{};
+  return {plan:Array.isArray(o.plan)?o.plan.map(String):[], actual:Array.isArray(o.actual)?o.actual.map(String):[]};
+}
+function normDay(day){
+  const o=(day&&typeof day==='object')?day:{};
+  const out={}; MEALS.forEach(m=>out[m]=normSlot(o[m])); return out;
+}
+function normalize(raw){
+  const d=(raw&&typeof raw==='object'&&!Array.isArray(raw))?raw:{};
+  let recipes=Array.isArray(d.recipes)?d.recipes:seedRecipes();
+  recipes=recipes.filter(r=>r&&typeof r==='object').map((r,i)=>({
+    id:String(r.id!=null?r.id:'rx'+Date.now()+'_'+i),
+    name:String(r.name||'（名称未設定）'),
+    category:CATS.includes(r.category)?r.category:'その他',
+    memo:String(r.memo||''),
+    isFavorite:!!r.isFavorite,
+    isArchived:!!r.isArchived
+  }));
+  const obj=v=>(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
+  const meals=obj(d.meals); Object.keys(meals).forEach(k=>meals[k]=normDay(meals[k]));
+  const weightsIn=obj(d.weights), weights={};
+  Object.keys(weightsIn).forEach(k=>{
+    const w=obj(weightsIn[k]); const o={};
+    if(num(w.morningWeight)!=null)o.morningWeight=r1(num(w.morningWeight));
+    if(num(w.nightWeight)!=null)o.nightWeight=r1(num(w.nightWeight));
+    weights[k]=o;
+  });
+  const memosIn=obj(d.dailyMemos), dailyMemos={};
+  Object.keys(memosIn).forEach(k=>{if(typeof memosIn[k]==='string')dailyMemos[k]=memosIn[k];});
+  const usage=obj(d.usage);
+  return {recipes,meals,weights,dailyMemos,usage};
+}
+function load(){
+  try{ return normalize(JSON.parse(localStorage.getItem(LS_KEY))); }
+  catch(e){ console.warn('load failed',e); return normalize(null); }
+}
+function save(){
+  try{ localStorage.setItem(LS_KEY,JSON.stringify(data)); }
+  catch(e){ toast('保存に失敗しました（容量不足の可能性）'); }
+}
+
+/* ===== 状態 ===== */
+let data=load();
+let cur={
+  tab:'palette', date:todayStr(), picker:null,
+  libCat:'all', libSearch:'', showArchived:false,
+  graphDays:14,
+  histStart:addDays(todayStr(),-6), histEnd:todayStr(),
+  repStart:addDays(todayStr(),-6), repEnd:todayStr(), report:''
+};
+
+function getDay(date){
+  if(!data.meals[date]) data.meals[date]=normDay(null);
+  else data.meals[date]=normDay(data.meals[date]);
+  return data.meals[date];
+}
+const recipeById=id=>data.recipes.find(r=>r.id===id);
+const nameOf=id=>{const r=recipeById(id);return r?r.name:'（削除済みの付箋）';};
+function bumpUsage(id){
+  const u=data.usage[id]||{c:0,t:0};
+  data.usage[id]={c:(u.c||0)+1,t:Date.now()};
+}
+
+/* ===== トースト ===== */
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+/* ===== モーダル ===== */
+function openModal(html){
+  document.getElementById('modal-root').innerHTML=
+    '<div class="overlay" onclick="if(event.target===this)MP.closeModal()"><div class="sheet" role="dialog">'+html+'</div></div>';
+  document.body.classList.add('noscroll');
+}
+function closeModal(){
+  document.getElementById('modal-root').innerHTML='';
+  document.body.classList.remove('noscroll');
+  cur.picker=null; render();
+}
+let choiceCbs=[];
+function choiceDialog(msg,options){
+  choiceCbs=options.map(o=>o.cb||null);
+  const btns=options.map((o,i)=>{
+    const cls=o.kind==='primary'?'btn wide':(o.kind==='danger'?'btn-soft':'btn-soft');
+    const style=o.kind==='primary'?'':'width:100%;text-align:center;padding:11px 0;';
+    return '<button class="'+cls+'" style="'+style+'" onclick="MP.choice('+i+')">'+esc(o.label)+'</button>';
+  }).join('');
+  openModal('<h3>確認</h3><p style="font-size:14px;margin:6px 0 0">'+esc(msg)+'</p><div class="choice-btns">'+btns+'</div>');
+}
+
+/* ===== レンダリング ===== */
+function render(){
+  const app=document.getElementById('app');
+  if(cur.tab==='palette') app.innerHTML=paletteHTML();
+  else if(cur.tab==='library') app.innerHTML=libraryHTML();
+  else app.innerHTML=historyHTML();
+  ['palette','library','history'].forEach(t=>{
+    document.getElementById('nav-'+t).classList.toggle('on',cur.tab===t);
+  });
+  window.scrollTo(0,0);
+}
+
+/* ---- パレット ---- */
+function chipHTML(id,onRemove,plan){
+  return '<span class="sticky'+(plan?' plan':'')+'">'+esc(nameOf(id))+
+    '<button class="x" aria-label="削除" onclick="'+onRemove+'">×</button></span>';
+}
+function weightColHTML(kind){
+  const w=data.weights[cur.date]||{};
+  const key=kind==='morning'?'morningWeight':'nightWeight';
+  const v=num(w[key]);
+  const label=kind==='morning'?'☀️ 朝の体重':'🌙 夜の体重';
+  const valHtml=v==null
+    ? '<div class="wval none" onclick="MP.weightInput(\''+kind+'\')">–.-<small>kg</small></div>'
+    : '<div class="wval" onclick="MP.weightInput(\''+kind+'\')">'+v.toFixed(1)+'<small>kg</small></div>';
+  const b=d=>'<button onclick="MP.weightStep(\''+kind+'\','+d+')">'+(d>0?'+':'')+d.toFixed(1)+'</button>';
+  return '<div class="wcol"><div class="wlabel '+kind+'">'+label+'</div>'+valHtml+
+    '<div class="wbtns">'+b(-1.0)+b(-0.1)+b(0.1)+b(1.0)+'</div></div>';
+}
+function mealCardHTML(m){
+  const slot=getDay(cur.date)[m];
+  const actualChips=slot.actual.length
+    ? slot.actual.map((id,i)=>chipHTML(id,"MP.rmActual('"+m+"',"+i+")",false)).join('')
+    : '<span class="empty">タップで追加 → まずは実績だけでOK</span>';
+  const quick=quickChipsHTML(m);
+  const planChips=slot.plan.length
+    ? slot.plan.map((id,i)=>chipHTML(id,"MP.rmPlan('"+m+"',"+i+")",true)).join('')
+    : '<span class="empty">余裕がある日だけ、ここに貼っておけます</span>';
+  return ''+
+  '<div class="meal-card" style="--mc:'+MEAL_COLORS[m]+'">'+
+    '<div class="meal-head"><span class="meal-name"><span class="dot"></span>'+m+'</span><span class="spacer"></span>'+
+      '<button class="mini-btn" onclick="MP.sameAsYesterday(\''+m+'\')">↩︎ 昨日と同じ</button></div>'+
+    '<div class="sec-label">たべたもの（実績）</div>'+
+    '<div class="chips">'+actualChips+'</div>'+
+    '<div class="quick">'+quick+
+      '<button class="qchip add" onclick="MP.openPicker(\''+m+'\',\'actual\')">＋ さがして追加</button></div>'+
+    '<details class="plan-box"'+(slot.plan.length?' open':'')+'>'+
+      '<summary>計画（任意）'+(slot.plan.length?'　'+slot.plan.length+'件':'')+'</summary>'+
+      '<div class="chips">'+planChips+'</div>'+
+      '<div class="plan-actions">'+
+        '<button class="btn-soft" onclick="MP.openPicker(\''+m+'\',\'plan\')">＋ 計画に貼る</button>'+
+        (slot.plan.length?'<button class="btn-ghost" onclick="MP.reflect(\''+m+'\')">計画を実績に反映</button>':'')+
+      '</div>'+
+    '</details>'+
+  '</div>';
+}
+function quickChipsHTML(m){
+  const slot=getDay(cur.date)[m];
+  const favs=data.recipes.filter(r=>!r.isArchived&&r.isFavorite)
+    .sort((a,b)=>((data.usage[b.id]||{}).c||0)-((data.usage[a.id]||{}).c||0))
+    .slice(0,5);
+  return favs.map(r=>'<button class="qchip" onclick="MP.quickAdd(\''+m+'\',\''+r.id+'\')">＋ '+esc(r.name)+'</button>').join('');
+}
+function paletteHTML(){
+  const isToday=cur.date===todayStr();
+  const day=getDay(cur.date);
+  const anyPlan=MEALS.some(m=>day[m].plan.length>0);
+  const memo=data.dailyMemos[cur.date]||'';
+  return ''+
+  '<div class="datebar">'+
+    '<button class="dnav" aria-label="前の日" onclick="MP.moveDate(-1)">‹</button>'+
+    '<div class="dmain"><div class="dd">'+dispLong(cur.date)+'</div>'+
+      (isToday?'<span class="hint">今日</span>':'<button class="today-chip" onclick="MP.goToday()">今日に戻る</button>')+
+    '</div>'+
+    '<button class="dnav" aria-label="次の日" onclick="MP.moveDate(1)">›</button>'+
+  '</div>'+
+  '<div class="card"><div class="wgrid">'+weightColHTML('morning')+weightColHTML('night')+'</div>'+
+  '<div class="hint" style="margin-top:8px;text-align:center">数字をタップすると直接入力できます</div></div>'+
+  (anyPlan?'<div style="margin:14px 0 0"><button class="btn wide" onclick="MP.reflectAll()">今日の計画をまとめて実績へ</button></div>':'')+
+  MEALS.map(mealCardHTML).join('')+
+  '<h2 class="sec">📝 きょうのメモ</h2>'+
+  '<textarea class="memo" placeholder="例：夜遅くなった／外食になった／体調は良かった" oninput="MP.setMemo(this.value)">'+esc(memo)+'</textarea>'+
+  '<p class="hint" style="text-align:center;margin-top:18px">記録はぜんぶ任意。できた分だけで大丈夫です 🍀</p>';
+}
+
+/* ---- 付箋選択モーダル ---- */
+function pickerTabsHTML(){
+  const tabs=[['fav','⭐ よく使う'],['recent','🕘 最近']].concat(CATS.map(c=>[c,c]));
+  return '<div class="tabs">'+tabs.map(t=>
+    '<button class="'+(cur.picker.cat===t[0]?'on':'')+'" onclick="MP.pickerCat(\''+t[0]+'\')">'+esc(t[1])+'</button>'
+  ).join('')+'</div>';
+}
+function pickerListHTML(){
+  const p=cur.picker; if(!p)return'';
+  let list=data.recipes.filter(r=>!r.isArchived);
+  const q=p.search.trim();
+  if(q) list=list.filter(r=>r.name.includes(q));
+  else if(p.cat==='fav') list=list.filter(r=>r.isFavorite);
+  else if(p.cat==='recent'){
+    list=list.filter(r=>data.usage[r.id])
+      .sort((a,b)=>((data.usage[b.id]||{}).t||0)-((data.usage[a.id]||{}).t||0)).slice(0,24);
+  }else list=list.filter(r=>r.category===p.cat);
+  if(!list.length){
+    const msg=q?'「'+esc(q)+'」に合う付箋がありません。下から登録できます':'この分類の付箋はまだありません';
+    return '<div class="empty-box">'+msg+'</div>';
+  }
+  return list.map(r=>'<button class="pk-item" onclick="MP.pick(\''+r.id+'\')">'+
+    (r.isFavorite?'<span class="fav">★</span>':'')+esc(r.name)+'</button>').join('');
+}
+function openPicker(meal,kind){
+  cur.picker={meal,kind,cat:'fav',search:''};
+  const kindLabel=kind==='plan'?'計画':'実績';
+  openModal(
+    '<button class="closer" onclick="MP.closeModal()" aria-label="閉じる">✕</button>'+
+    '<h3>'+esc(meal)+'の<span style="color:var(--green-d)">'+kindLabel+'</span>に貼る</h3>'+
+    '<input class="search" placeholder="付箋をさがす" oninput="MP.pickerSearch(this.value)">'+
+    '<div id="pkTabs">'+pickerTabsHTML()+'</div>'+
+    '<div class="pk-list" id="pkList">'+pickerListHTML()+'</div>'+
+    '<div class="hint" style="margin:-6px 0 4px">タップするとそのまま貼れます（続けて何枚でも）</div>'+
+    '<div class="newrow"><div class="hint" style="font-weight:700">新しい付箋を登録して貼る</div>'+
+      '<div class="row"><input class="input" id="pkNewName" placeholder="例：親子丼">'+
+      '<select class="input" id="pkNewCat" style="max-width:42%">'+CATS.map(c=>'<option>'+c+'</option>').join('')+'</select></div>'+
+      '<div class="row"><button class="btn wide" onclick="MP.registerAndPick()">登録して貼る</button></div></div>'+
+    '<div style="margin-top:14px"><button class="btn-soft" style="width:100%;text-align:center" onclick="MP.closeModal()">とじる（完了）</button></div>'
+  );
+}
+function refreshPicker(){
+  const l=document.getElementById('pkList'); if(l)l.innerHTML=pickerListHTML();
+  const t=document.getElementById('pkTabs'); if(t)t.innerHTML=pickerTabsHTML();
+}
+
+/* ---- いつもの食事（ライブラリ） ---- */
+function libraryHTML(){
+  const tabs=[['all','すべて'],['fav','⭐ よく使う']].concat(CATS.map(c=>[c,c]));
+  let list=data.recipes.filter(r=>!r.isArchived);
+  const q=cur.libSearch.trim();
+  if(q) list=list.filter(r=>r.name.includes(q));
+  else if(cur.libCat==='fav') list=list.filter(r=>r.isFavorite);
+  else if(cur.libCat!=='all') list=list.filter(r=>r.category===cur.libCat);
+  const visIds=list.map(r=>r.id);
+  const items=list.length?list.map(r=>{
+    const i=visIds.indexOf(r.id);
+    return '<div class="lib-item">'+
+      '<button class="icon-btn star'+(r.isFavorite?' on':'')+'" aria-label="お気に入り" onclick="MP.toggleFav(\''+r.id+'\')">★</button>'+
+      '<div class="nm"><div class="name">'+esc(r.name)+'</div><div class="meta">'+esc(r.category)+(r.memo?'｜'+esc(r.memo):'')+'</div></div>'+
+      '<button class="icon-btn" aria-label="上へ" '+(i===0?'disabled style="opacity:.3"':'')+' onclick="MP.moveRecipe(\''+r.id+'\',-1)">↑</button>'+
+      '<button class="icon-btn" aria-label="下へ" '+(i===visIds.length-1?'disabled style="opacity:.3"':'')+' onclick="MP.moveRecipe(\''+r.id+'\',1)">↓</button>'+
+      '<button class="icon-btn" aria-label="編集" onclick="MP.openRecipeForm(\''+r.id+'\')">✏️</button>'+
+    '</div>';
+  }).join(''):'<div class="empty-box">この条件の付箋はありません</div>';
+  const archived=data.recipes.filter(r=>r.isArchived);
+  const archHtml=cur.showArchived&&archived.length
+    ? archived.map(r=>'<div class="lib-item" style="opacity:.75"><div class="nm"><div class="name">'+esc(r.name)+'</div><div class="meta">'+esc(r.category)+'</div></div>'+
+      '<button class="btn-ghost" onclick="MP.restoreRecipe(\''+r.id+'\')">復元</button></div>').join('')
+    : '';
+  return ''+
+  '<h2 class="sec" style="margin-top:6px">🏷️ いつもの食事（付箋）</h2>'+
+  '<p class="hint" style="margin:0 2px 10px">よく食べるものを付箋にしておくと、毎日の入力が1タップになります。</p>'+
+  '<input class="search" placeholder="付箋をさがす" value="'+esc(cur.libSearch)+'" oninput="MP.libSearchFn(this.value)">'+
+  '<div class="tabs">'+tabs.map(t=>'<button class="'+(cur.libCat===t[0]?'on':'')+'" onclick="MP.libCatFn(\''+t[0]+'\')">'+esc(t[1])+'</button>').join('')+'</div>'+
+  '<div style="margin:2px 0 12px"><button class="btn wide" onclick="MP.openRecipeForm(null)">＋ 新しい付箋を追加</button></div>'+
+  items+
+  '<div style="margin-top:16px;text-align:center">'+
+    (archived.length?'<button class="btn-soft" onclick="MP.toggleArchived()">'+(cur.showArchived?'アーカイブを隠す':'アーカイブ済みを見る（'+archived.length+'）')+'</button>':'')+
+  '</div>'+archHtml;
+}
+function openRecipeForm(id){
+  const r=id?recipeById(id):null;
+  openModal(
+    '<button class="closer" onclick="MP.closeModal()" aria-label="閉じる">✕</button>'+
+    '<h3>'+(r?'付箋を編集':'新しい付箋')+'</h3>'+
+    '<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">'+
+      '<input class="input" id="rfName" placeholder="付箋名（例：親子丼）" value="'+esc(r?r.name:'')+'">'+
+      '<select class="input" id="rfCat">'+CATS.map(c=>'<option'+((r?r.category:'その他')===c?' selected':'')+'>'+c+'</option>').join('')+'</select>'+
+      '<input class="input" id="rfMemo" placeholder="メモ（任意）" value="'+esc(r?r.memo:'')+'">'+
+      '<label style="font-size:14px;display:flex;align-items:center;gap:8px"><input type="checkbox" id="rfFav"'+(r&&r.isFavorite?' checked':'')+' style="width:18px;height:18px">⭐ よく使う付箋にする</label>'+
+      '<button class="btn wide" onclick="MP.saveRecipe(\''+(id||'')+'\')">保存する</button>'+
+      (r?'<button class="btn-soft" style="width:100%;text-align:center" onclick="MP.archiveRecipe(\''+id+'\')">この付箋をアーカイブする</button>'+
+         '<div class="hint">アーカイブしても過去の記録には残ります。あとから復元できます。</div>':'')+
+    '</div>'
+  );
+}
+
+/* ---- 履歴・報告 ---- */
+function graphSVG(days){
+  const end=todayStr(); const dates=[];
+  for(let i=days-1;i>=0;i--)dates.push(addDays(end,-i));
+  const pts=dates.map(d=>{const w=data.weights[d]||{};return{d,m:num(w.morningWeight),n:num(w.nightWeight)};});
+  const vals=[]; pts.forEach(p=>{if(p.m!=null)vals.push(p.m); if(p.n!=null)vals.push(p.n);});
+  if(!vals.length) return '<div class="empty-box">登録された体重データがまだありません</div>';
+  let min=Math.min(...vals), max=Math.max(...vals);
+  if(max-min<1.6){const mid=(max+min)/2; min=mid-0.8; max=mid+0.8;}
+  min-=0.3; max+=0.3;
+  const W=360,H=190,L=38,R=10,T=12,B=24;
+  const X=i=>L+(W-L-R)*(dates.length===1?0.5:i/(dates.length-1));
+  const Y=v=>T+(H-T-B)*(max-v)/(max-min);
+  let g='';
+  for(let k=0;k<=3;k++){
+    const v=min+(max-min)*k/3, y=Y(v);
+    g+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#EFE7D5" stroke-width="1"/>'+
+       '<text x="'+(L-5)+'" y="'+(y+3)+'" font-size="9" fill="#A89C88" text-anchor="end">'+v.toFixed(1)+'</text>';
+  }
+  const lblIdx=[0,Math.floor((dates.length-1)/2),dates.length-1];
+  lblIdx.forEach(i=>{const d=parseDate(dates[i]);
+    g+='<text x="'+X(i)+'" y="'+(H-7)+'" font-size="9" fill="#A89C88" text-anchor="middle">'+(d.getMonth()+1)+'/'+d.getDate()+'</text>';});
+  function series(key,color){
+    let path='', prev=false, out='';
+    pts.forEach((p,i)=>{
+      const v=p[key]; if(v==null){prev=false;return;}
+      const x=X(i),y=Y(v);
+      path+=(prev?' L':' M')+x.toFixed(1)+' '+y.toFixed(1); prev=true;
+      if(days<=30) out+='<circle cx="'+x+'" cy="'+y+'" r="3" fill="'+color+'"/>';
+      if(days<=14) out+='<text x="'+x+'" y="'+(y-6)+'" font-size="8.5" fill="'+color+'" text-anchor="middle">'+v.toFixed(1)+'</text>';
+    });
+    return (path?'<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round"/>':'')+out;
+  }
+  g+=series('m','#E8963F')+series('n','#5B6BBF');
+  return '<div class="gwrap"><div class="hint" style="margin-bottom:4px">'+
+    '<span style="color:#E8963F;font-weight:700">● 朝</span>　<span style="color:#5B6BBF;font-weight:700">● 夜</span></div>'+
+    '<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="体重の推移グラフ">'+g+'</svg></div>';
+}
+function logEntriesHTML(){
+  if(parseDate(cur.histStart)>parseDate(cur.histEnd)) return '<div class="empty-box">開始日が終了日より後になっています</div>';
+  const out=[]; let d=cur.histEnd; let guard=0;
+  while(guard++<400){
+    const day=data.meals[d]?normDay(data.meals[d]):null;
+    const w=data.weights[d]||{}; const memo=data.dailyMemos[d];
+    const hasMeal=day&&MEALS.some(m=>day[m].actual.length);
+    const hasW=num(w.morningWeight)!=null||num(w.nightWeight)!=null;
+    if(hasMeal||hasW||memo){
+      const wTxt=[num(w.morningWeight)!=null?'朝 '+num(w.morningWeight).toFixed(1)+'kg':null,
+                  num(w.nightWeight)!=null?'夜 '+num(w.nightWeight).toFixed(1)+'kg':null].filter(Boolean).join('／');
+      const mealLines=hasMeal?MEALS.map(m=>{
+        const a=day[m].actual; if(!a.length)return'';
+        return '<div class="ld-meal"><b>'+m+'</b>'+esc(a.map(nameOf).join('、'))+'</div>';
+      }).join(''):'';
+      out.push('<div class="log-day"><div class="ld-head"><span class="ld-date">'+disp(d)+'</span>'+
+        (wTxt?'<span class="ld-w">'+wTxt+'</span>':'')+'</div>'+mealLines+
+        (memo?'<div class="ld-memo">📝 '+esc(memo)+'</div>':'')+
+        '<div class="ld-edit"><button class="btn-soft" onclick="MP.gotoDate(\''+d+'\')">この日を開いて編集</button></div></div>');
+    }
+    if(d===cur.histStart)break;
+    d=addDays(d,-1);
+  }
+  return out.length?out.join(''):'<div class="empty-box">期間内にデータが見つかりませんでした。</div>';
+}
+function historyHTML(){
+  const periods=[[7,'7日'],[14,'14日'],[30,'30日'],[90,'3ヶ月'],[180,'半年'],[365,'1年']];
+  return ''+
+  '<h2 class="sec" style="margin-top:6px">📈 体重のうつりかわり</h2>'+
+  '<div class="card">'+
+    '<div class="tabs" style="padding-top:0">'+periods.map(p=>'<button class="'+(cur.graphDays===p[0]?'on':'')+'" onclick="MP.graphDays('+p[0]+')">'+p[1]+'</button>').join('')+'</div>'+
+    graphSVG(cur.graphDays)+'</div>'+
+  '<h2 class="sec">📨 報告用テキスト</h2>'+
+  '<div class="card">'+
+    '<div class="hint">栄養士さん・お医者さん・ご家族への共有や、自分の振り返りに。</div>'+
+    '<div class="range-row"><input type="date" value="'+cur.repStart+'" onchange="MP.setRep(\'repStart\',this.value)"><span>〜</span><input type="date" value="'+cur.repEnd+'" onchange="MP.setRep(\'repEnd\',this.value)"></div>'+
+    '<button class="btn wide" onclick="MP.buildReport()">レポートを作る</button>'+
+    (cur.report?'<div style="margin-top:10px"><textarea class="report-box" readonly id="reportText">'+esc(cur.report)+'</textarea>'+
+      '<div style="margin-top:8px"><button class="btn-ghost" style="width:100%;text-align:center" onclick="MP.copyReport()">📋 コピーする</button></div></div>':'')+
+  '</div>'+
+  '<h2 class="sec">📖 過去ログ</h2>'+
+  '<div class="range-row"><input type="date" value="'+cur.histStart+'" onchange="MP.setHist(\'histStart\',this.value)"><span>〜</span><input type="date" value="'+cur.histEnd+'" onchange="MP.setHist(\'histEnd\',this.value)"></div>'+
+  logEntriesHTML()+
+  '<h2 class="sec">💾 バックアップ・復元</h2>'+
+  '<div class="card">'+
+    '<div class="hint">機種変更やブラウザのデータ消去に備えて、ときどき保存しておくと安心です。データはこの端末の中にだけ保存されています。</div>'+
+    '<div style="display:flex;gap:8px;margin-top:10px">'+
+      '<button class="btn" style="flex:1" onclick="MP.exportData()">⬇️ 保存する</button>'+
+      '<button class="btn-ghost" style="flex:1;text-align:center" onclick="document.getElementById(\'importFile\').click()">⬆️ 復元する</button>'+
+    '</div></div>'+
+  '<p class="hint" style="text-align:center;margin-top:18px">カロリーを数える前に、食事の型を整える。</p>';
+}
+
+/* ---- レポート生成 ---- */
+function buildReportText(){
+  const s=cur.repStart, e=cur.repEnd;
+  if(parseDate(s)>parseDate(e)) return '開始日が終了日より後になっています。';
+  let body='', d=s, guard=0, any=false;
+  while(guard++<400){
+    const day=data.meals[d]?normDay(data.meals[d]):null;
+    const w=data.weights[d]||{}; const memo=data.dailyMemos[d];
+    const hasMeal=day&&MEALS.some(m=>day[m].actual.length);
+    const hasW=num(w.morningWeight)!=null||num(w.nightWeight)!=null;
+    if(hasMeal||hasW||memo){
+      any=true;
+      body+='■ '+disp(d)+'\n';
+      const wTxt=[num(w.morningWeight)!=null?'朝 '+num(w.morningWeight).toFixed(1)+'kg':'朝 ー',
+                  num(w.nightWeight)!=null?'夜 '+num(w.nightWeight).toFixed(1)+'kg':'夜 ー'].join(' ／ ');
+      if(hasW) body+='体重: '+wTxt+'\n';
+      MEALS.forEach(m=>{
+        const a=day?day[m].actual:[];
+        body+=m+': '+(a.length?a.map(nameOf).join('、'):'（記録なし）')+'\n';
+      });
+      if(memo) body+='メモ: '+memo+'\n';
+      body+='\n';
+    }
+    if(d===e)break; d=addDays(d,1);
+  }
+  const now=new Date();
+  const stamp=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+pad(now.getHours())+':'+pad(now.getMinutes());
+  return 'Meal Painter 食事レポート\n対象期間: '+dispLong(s)+' 〜 '+dispLong(e)+'\n\n'+
+    (any?body:'この期間に記録はありませんでした。\n\n')+'作成日時: '+stamp;
+}
+
+/* ===== 操作（グローバルAPI） ===== */
+const MP={
+  tab(t){cur.tab=t; render();},
+  moveDate(n){cur.date=addDays(cur.date,n); render();},
+  goToday(){cur.date=todayStr(); render();},
+  gotoDate(d){cur.date=d; cur.tab='palette'; render();},
+
+  /* 体重 */
+  lastWeight(key){
+    let d=cur.date;
+    for(let i=0;i<730;i++){
+      const w=data.weights[d];
+      if(w){const a=num(w.morningWeight),b=num(w.nightWeight);
+        if(key==='morningWeight'&&a!=null)return a;
+        if(key==='nightWeight'&&b!=null)return b;
+        const any=(a!=null?a:b); if(any!=null)return any;}
+      d=addDays(d,-1);
+    }
+    return null;
+  },
+  weightStep(kind,delta){
+    const key=kind==='morning'?'morningWeight':'nightWeight';
+    if(!data.weights[cur.date])data.weights[cur.date]={};
+    const w=data.weights[cur.date];
+    const base=num(w[key])!=null?num(w[key]):(MP.lastWeight(key)!=null?MP.lastWeight(key):60.0);
+    w[key]=Math.min(250,Math.max(20,r1(base+delta)));
+    save(); render();
+  },
+  weightInput(kind){
+    const key=kind==='morning'?'morningWeight':'nightWeight';
+    const w=data.weights[cur.date]||{};
+    const cv=num(w[key]); const def=cv!=null?cv:(MP.lastWeight(key)||'');
+    const v=prompt((kind==='morning'?'朝':'夜')+'の体重を入力（kg）',def);
+    if(v==null)return;
+    const n=num(String(v).replace(/[^\d.]/g,''));
+    if(n==null||n<20||n>250){toast('20〜250の数値で入力してください');return;}
+    if(!data.weights[cur.date])data.weights[cur.date]={};
+    data.weights[cur.date][key]=r1(n); save(); render();
+  },
+
+  /* 実績・計画 */
+  rmActual(m,i){const s=getDay(cur.date)[m]; s.actual.splice(i,1); save(); render();},
+  rmPlan(m,i){const s=getDay(cur.date)[m]; s.plan.splice(i,1); save(); render();},
+  quickAdd(m,id){
+    getDay(cur.date)[m].actual.push(id); bumpUsage(id); save(); render();
+    toast(nameOf(id)+' を'+m+'に追加');
+  },
+  sameAsYesterday(m){
+    const y=addDays(cur.date,-1);
+    const prev=(data.meals[y]&&normDay(data.meals[y])[m].actual)||[];
+    if(!prev.length){toast('昨日の'+m+'の記録がありません');return;}
+    const slot=getDay(cur.date)[m];
+    const apply=mode=>{
+      if(mode==='over')slot.actual=prev.slice();
+      else slot.actual=slot.actual.concat(prev);
+      save(); render(); toast('昨日の'+m+'をコピーしました');
+    };
+    if(slot.actual.length){
+      choiceDialog('すでに実績があります。昨日の'+m+'（'+prev.map(nameOf).join('、')+'）をどうしますか？',[
+        {label:'上書きする',kind:'primary',cb:()=>apply('over')},
+        {label:'末尾に追加する',cb:()=>apply('add')},
+        {label:'キャンセル'}
+      ]);
+    }else apply('over');
+  },
+  reflect(m){
+    const slot=getDay(cur.date)[m];
+    if(!slot.plan.length){toast('計画がまだありません');return;}
+    const apply=mode=>{
+      if(mode==='over')slot.actual=slot.plan.slice();
+      else slot.actual=slot.actual.concat(slot.plan);
+      save(); render(); toast(m+'の計画を実績に反映しました');
+    };
+    if(slot.actual.length){
+      choiceDialog('すでに実績があります。どうしますか？',[
+        {label:'上書きする',kind:'primary',cb:()=>apply('over')},
+        {label:'末尾に追加する',cb:()=>apply('add')},
+        {label:'キャンセル'}
+      ]);
+    }else apply('over');
+  },
+  reflectAll(){
+    const day=getDay(cur.date);
+    const hasActual=MEALS.some(m=>day[m].actual.length&&day[m].plan.length);
+    const apply=mode=>{
+      MEALS.forEach(m=>{
+        if(!day[m].plan.length)return;
+        if(mode==='over')day[m].actual=day[m].plan.slice();
+        else day[m].actual=day[m].actual.concat(day[m].plan);
+      });
+      save(); render(); toast('計画を実績に反映しました');
+    };
+    if(hasActual){
+      choiceDialog('実績がすでにある食事枠があります。どうしますか？',[
+        {label:'上書きする',kind:'primary',cb:()=>apply('over')},
+        {label:'末尾に追加する',cb:()=>apply('add')},
+        {label:'キャンセル'}
+      ]);
+    }else apply('over');
+  },
+  setMemo(v){data.dailyMemos[cur.date]=v; save();},
+
+  /* 付箋選択モーダル */
+  openPicker, closeModal,
+  pickerCat(c){if(cur.picker){cur.picker.cat=c; cur.picker.search=''; const s=document.querySelector('.sheet .search'); if(s)s.value=''; refreshPicker();}},
+  pickerSearch(v){if(cur.picker){cur.picker.search=v; refreshPicker();}},
+  pick(id){
+    const p=cur.picker; if(!p)return;
+    getDay(cur.date)[p.meal][p.kind].push(id); bumpUsage(id); save();
+    toast(nameOf(id)+' を貼りました'); refreshPicker();
+  },
+  registerAndPick(){
+    const name=(document.getElementById('pkNewName').value||'').trim();
+    const cat=document.getElementById('pkNewCat').value;
+    if(!name){toast('付箋名を入力してください');return;}
+    const r={id:'r'+Date.now(),name,category:CATS.includes(cat)?cat:'その他',memo:'',isFavorite:false,isArchived:false};
+    data.recipes.push(r);
+    const p=cur.picker;
+    if(p){getDay(cur.date)[p.meal][p.kind].push(r.id); bumpUsage(r.id);}
+    save(); document.getElementById('pkNewName').value='';
+    toast('「'+name+'」を登録して貼りました'); refreshPicker();
+  },
+  choice(i){const cb=choiceCbs[i]; closeModal(); if(cb)cb();},
+
+  /* ライブラリ */
+  libSearchFn(v){cur.libSearch=v; const keep=document.activeElement; render();
+    const s=document.querySelector('#app .search'); if(s){s.value=v; s.focus(); s.setSelectionRange(v.length,v.length);}},
+  libCatFn(c){cur.libCat=c; cur.libSearch=''; render();},
+  toggleFav(id){const r=recipeById(id); if(r){r.isFavorite=!r.isFavorite; save(); render();}},
+  toggleArchived(){cur.showArchived=!cur.showArchived; render();},
+  moveRecipe(id,dir){
+    let vis=data.recipes.filter(r=>!r.isArchived);
+    const q=cur.libSearch.trim();
+    if(q)vis=vis.filter(r=>r.name.includes(q));
+    else if(cur.libCat==='fav')vis=vis.filter(r=>r.isFavorite);
+    else if(cur.libCat!=='all')vis=vis.filter(r=>r.category===cur.libCat);
+    const vi=vis.findIndex(r=>r.id===id); const ti=vi+dir;
+    if(vi<0||ti<0||ti>=vis.length)return;
+    const a=data.recipes.indexOf(vis[vi]), b=data.recipes.indexOf(vis[ti]);
+    const tmp=data.recipes[a]; data.recipes[a]=data.recipes[b]; data.recipes[b]=tmp;
+    save(); render();
+  },
+  openRecipeForm,
+  saveRecipe(id){
+    const name=(document.getElementById('rfName').value||'').trim();
+    if(!name){toast('付箋名を入力してください');return;}
+    const cat=document.getElementById('rfCat').value;
+    const memo=(document.getElementById('rfMemo').value||'').trim();
+    const fav=document.getElementById('rfFav').checked;
+    if(id){
+      const r=recipeById(id); if(!r)return;
+      r.name=name; r.category=CATS.includes(cat)?cat:'その他'; r.memo=memo; r.isFavorite=fav;
+      toast('付箋を更新しました');
+    }else{
+      data.recipes.push({id:'r'+Date.now(),name,category:CATS.includes(cat)?cat:'その他',memo,isFavorite:fav,isArchived:false});
+      toast('「'+name+'」を追加しました');
+    }
+    save(); closeModal();
+  },
+  archiveRecipe(id){
+    const r=recipeById(id); if(!r)return;
+    closeModal();
+    choiceDialog('「'+r.name+'」をアーカイブしますか？過去の記録はそのまま残り、あとから復元もできます。',[
+      {label:'アーカイブする',kind:'primary',cb:()=>{r.isArchived=true; save(); render(); toast('アーカイブしました');}},
+      {label:'キャンセル'}
+    ]);
+  },
+  restoreRecipe(id){const r=recipeById(id); if(r){r.isArchived=false; save(); render(); toast('「'+r.name+'」を復元しました');}},
+
+  /* 履歴・報告 */
+  graphDays(n){cur.graphDays=n; render();},
+  setHist(k,v){if(v)cur[k]=v; render();},
+  setRep(k,v){if(v)cur[k]=v;},
+  buildReport(){cur.report=buildReportText(); render();},
+  copyReport(){
+    const t=cur.report;
+    const done=()=>toast('レポートをコピーしました');
+    const fail=()=>{const ta=document.getElementById('reportText'); if(ta){ta.focus(); ta.select();} toast('長押しでコピーしてください');};
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(done).catch(fail);
+    }else fail();
+  },
+
+  /* バックアップ */
+  exportData(){
+    const payload={version:1,exportedAt:new Date().toISOString(),
+      recipes:data.recipes,meals:data.meals,weights:data.weights,dailyMemos:data.dailyMemos,usage:data.usage};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='meal-painter-backup-'+todayStr()+'.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+    toast('バックアップを保存しました');
+  }
+};
+window.MP=MP;
+
+/* インポート */
+document.getElementById('importFile').addEventListener('change',function(){
+  const file=this.files&&this.files[0];
+  this.value=''; /* 同じファイルの再選択を可能にする */
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onerror=()=>toast('ファイルの読み込みに失敗しました。');
+  reader.onload=()=>{
+    let parsed=null;
+    try{parsed=JSON.parse(reader.result);}catch(e){toast('ファイルの形式が正しくありません。');return;}
+    if(!parsed||typeof parsed!=='object'||!Array.isArray(parsed.recipes)){
+      toast('ファイルの形式が正しくありません。');return;
+    }
+    choiceDialog('バックアップから復元します。今このアプリにあるデータは置き換えられます。よろしいですか？',[
+      {label:'復元する',kind:'primary',cb:()=>{data=normalize(parsed); save(); render(); toast('データの復元に成功しました。');}},
+      {label:'キャンセル'}
+    ]);
+  };
+  reader.readAsText(file);
+});
+
+/* 初回ガイド */
+(function(){
+  try{
+    if(!localStorage.getItem(LS_KEY)){
+      save();
+      setTimeout(()=>{
+        openModal('<h3>🎨 Meal Painterへようこそ</h3>'+
+          '<p style="font-size:14px">食べたものを付箋でペタッと貼るだけの、ゆるい食事記録アプリです。</p>'+
+          '<p style="font-size:14px"><b>まずは食べたものを「実績」に追加するだけでOK。</b><br>余裕がある日は「計画」に貼っておくと、あとでまとめて実績に反映できます。</p>'+
+          '<p class="hint">データはこの端末の中にだけ保存されます。「履歴・報告」からいつでもバックアップできます。</p>'+
+          '<button class="btn wide" onclick="MP.closeModal()">はじめる</button>');
+      },300);
+    }
+  }catch(e){}
+})();
+
+render();
+</script>
+</body>
+</html>
