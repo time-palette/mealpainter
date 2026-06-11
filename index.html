@@ -365,7 +365,7 @@ function quickChipsHTML(m){
   const slot=getDay(cur.date)[m];
   const favs=data.recipes.filter(r=>!r.isArchived&&r.isFavorite)
     .sort((a,b)=>((data.usage[b.id]||{}).c||0)-((data.usage[a.id]||{}).c||0))
-    .slice(0,5);
+    .slice(0,10);
   return favs.map(r=>'<button class="qchip" onclick="MP.quickAdd(\''+m+'\',\''+r.id+'\')">＋ '+esc(r.name)+'</button>').join('');
 }
 function paletteHTML(){
