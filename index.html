@@ -437,15 +437,14 @@ function refreshPicker(){
 }
 
 /* ---- いつもの食事（ライブラリ） ---- */
-function libraryHTML(){
-  const tabs=[['all','すべて'],['fav','⭐ よく使う']].concat(CATS.map(c=>[c,c]));
+function libListHTML(){
   let list=data.recipes.filter(r=>!r.isArchived);
   const q=cur.libSearch.trim();
   if(q) list=list.filter(r=>r.name.includes(q));
   else if(cur.libCat==='fav') list=list.filter(r=>r.isFavorite);
   else if(cur.libCat!=='all') list=list.filter(r=>r.category===cur.libCat);
   const visIds=list.map(r=>r.id);
-  const items=list.length?list.map(r=>{
+  return list.length?list.map(r=>{
     const i=visIds.indexOf(r.id);
     return '<div class="lib-item">'+
       '<button class="icon-btn star'+(r.isFavorite?' on':'')+'" aria-label="お気に入り" onclick="MP.toggleFav(\''+r.id+'\')">★</button>'+
@@ -455,6 +454,9 @@ function libraryHTML(){
       '<button class="icon-btn" aria-label="編集" onclick="MP.openRecipeForm(\''+r.id+'\')">✏️</button>'+
     '</div>';
   }).join(''):'<div class="empty-box">この条件の付箋はありません</div>';
+}
+function libraryHTML(){
+  const tabs=[['all','すべて'],['fav','⭐ よく使う']].concat(CATS.map(c=>[c,c]));
   const archived=data.recipes.filter(r=>r.isArchived);
   const archHtml=cur.showArchived&&archived.length
     ? archived.map(r=>'<div class="lib-item" style="opacity:.75"><div class="nm"><div class="name">'+esc(r.name)+'</div><div class="meta">'+esc(r.category)+'</div></div>'+
@@ -466,7 +468,7 @@ function libraryHTML(){
   '<input class="search" placeholder="付箋をさがす" value="'+esc(cur.libSearch)+'" oninput="MP.libSearchFn(this.value)">'+
   '<div class="tabs">'+tabs.map(t=>'<button class="'+(cur.libCat===t[0]?'on':'')+'" onclick="MP.libCatFn(\''+t[0]+'\')">'+esc(t[1])+'</button>').join('')+'</div>'+
   '<div style="margin:2px 0 12px"><button class="btn wide" onclick="MP.openRecipeForm(null)">＋ 新しい付箋を追加</button></div>'+
-  items+
+  '<div id="libList">'+libListHTML()+'</div>'+
   '<div style="margin-top:16px;text-align:center">'+
     (archived.length?'<button class="btn-soft" onclick="MP.toggleArchived()">'+(cur.showArchived?'アーカイブを隠す':'アーカイブ済みを見る（'+archived.length+'）')+'</button>':'')+
   '</div>'+archHtml;
@@ -735,8 +737,8 @@ const MP={
   choice(i){const cb=choiceCbs[i]; closeModal(); if(cb)cb();},
 
   /* ライブラリ */
-  libSearchFn(v){cur.libSearch=v; const keep=document.activeElement; render();
-    const s=document.querySelector('#app .search'); if(s){s.value=v; s.focus(); s.setSelectionRange(v.length,v.length);}},
+  libSearchFn(v){cur.libSearch=v;
+    const l=document.getElementById('libList'); if(l)l.innerHTML=libListHTML();},
   libCatFn(c){cur.libCat=c; cur.libSearch=''; render();},
   toggleFav(id){const r=recipeById(id); if(r){r.isFavorite=!r.isFavorite; save(); render();}},
   toggleArchived(){cur.showArchived=!cur.showArchived; render();},
